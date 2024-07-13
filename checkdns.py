@@ -1,3 +1,5 @@
+import argparse
+
 def main():
     parser = argparse.ArgumentParser(description='Process a zone file and extract unique field values')
     parser.add_argument('filename', help='Path to the zone file')
