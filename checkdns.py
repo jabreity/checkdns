@@ -1,13 +1,15 @@
+import argparse
 import re
 
-def extract_fourth_column_from_tld_zone(filename):
-  """Extracts the fourth column from a TLD zone file.
+def extract_fourth_column_from_tld_zone(filename, column_number):
+  """Extracts the specified column from a TLD zone file.
 
   Args:
     filename: Path to the TLD zone file.
+    column_number: The index of the column to extract (1-based).
 
   Returns:
-    A list of unique sorted values from the fourth column.
+    A list of unique sorted values from the specified column.
   """
 
   unique_values = set()
@@ -17,13 +19,17 @@ def extract_fourth_column_from_tld_zone(filename):
       if line.startswith(';') or not line.strip():
         continue
 
-      # Assuming fourth column is the domain name, adjust regex if needed
-      match = re.match(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)", line)
-      if match:
-        unique_values.add(match.group(4))
+      # Extract columns based on column_number
+      columns = line.split()
+      if len(columns) >= column_number:
+        unique_values.add(columns[column_number - 1])
   return sorted(unique_values)
 
 if __name__ == "__main__":
-  filename = "/home/jason/projects/czds-api-client-python/domains/zonefiles/com.txt"
-  unique_domains = extract_fourth_column_from_tld_zone(filename)
-  print(unique_domains)
+  parser = argparse.ArgumentParser(description="Extract a column from a TLD zone file")
+  parser.add_argument("filename", help="Path to the TLD zone file")
+  parser.add_argument("-c", "--column", type=int, default=4, help="Column number to extract (default: 4)")
+  args = parser.parse_args()
+
+  unique_values = extract_fourth_column_from_tld_zone(args.filename, args.column)
+  print(unique_values)
