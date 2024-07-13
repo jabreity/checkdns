@@ -72,13 +72,13 @@ def compare_files(file1, file2, field_num, summary_mode=False):
 
     # Unique field values
     for value in sorted(unique_in_file1):
-        summary_lines.append(f"+ {value}")
+        summary_lines.append(f"+{value}")
     for value in sorted(unique_in_file2):
-        summary_lines.append(f"- {value}")
+        summary_lines.append(f"-{value}")
 
     # Different record type counts
     for record_type, counts in diff_record_types.items():
-        summary_lines.append(f"~ {record_type}: {file1}={counts[0]}, {file2}={counts[1]}")
+        summary_lines.append(f"~{record_type}: {file1}={counts[0]}, {file2}={counts[1]}")
 
     # Print results
     if summary_mode:
