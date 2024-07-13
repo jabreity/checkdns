@@ -1,54 +1,39 @@
-import argparse
-import os
-import gzip
-
-def extract_unique_fields(filename, field_num):
-    field_values = set()
-
-    try:
-        with gzip.open(filename, 'rt') as file:
-            for line in file:
-                if line.startswith(';') or line.strip() == '':
-                    continue
-                
-                fields = line.split()
-                if len(fields) >= field_num:
-                    field_values.add(fields[field_num - 1])
-
-        return field_values
-
-    except FileNotFoundError:
-        print(f"Error: File '{filename}' not found.")
-        return set()
-
-def find_new_domains(file1, file2, field_num):
-    # Extract unique field values from both files
+def compare_files(file1, file2, field_num):
+    # Extract unique field values and record type counts for both files
     field_values1 = extract_unique_fields(file1, field_num)
     field_values2 = extract_unique_fields(file2, field_num)
 
-    # Find new domains (field values) in file2 that are not in file1
-    new_domains = field_values2 - field_values1
+    record_types1 = count_record_types(file1)
+    record_types2 = count_record_types(file2)
 
-    # Print new domains
-    print(f"\nNew domains found in {file2} but not in {file1}:")
-    for domain in sorted(new_domains):
-        print(f"  {domain}")
+    # Identify differences
+    unique_in_file1 = field_values1 - field_values2
+    unique_in_file2 = field_values2 - field_values1
 
-def main():
-    parser = argparse.ArgumentParser(description='Compare gzipped zone files')
-    parser.add_argument('file1', help='Path to the first gzipped file')
-    parser.add_argument('file2', help='Path to the second gzipped file')
-    parser.add_argument('-f', '--field', type=int, default=4, help='Field number to extract (default is 4)')
-    args = parser.parse_args()
+    diff_record_types = {}
+    for record_type in record_types1:
+        if record_types1[record_type] != record_types2.get(record_type, 0):
+            diff_record_types[record_type] = (record_types1[record_type], record_types2.get(record_type, 0))
 
-    file1 = args.file1
-    file2 = args.file2
-    field_num = args.field
+    # Find new records added in file2
+    new_records_file2 = []
+    with gzip.open(file2, 'rt') as f2:
+        for line_number, line in enumerate(f2, start=1):
+            if line.startswith(';') or line.strip() == '':
+                continue
+            fields = line.split()
+            if len(fields) >= field_num and fields[field_num - 1] in unique_in_file2:
+                new_records_file2.append((line_number, line.strip()))
 
-    if os.path.isfile(file1) and os.path.isfile(file2):
-        find_new_domains(file1, file2, field_num)
-    else:
-        print("Error: Please provide two valid gzipped files.")
+    # Print results
+    print(f"Unique field values in {file1} but not in {file2}:")
+    for value in sorted(unique_in_file1):
+        print(value)
 
-if __name__ == "__main__":
-    main()
+    print(f"\nNew records added in {file2}:")
+    for line_number, line_content in new_records_file2:
+        print(f"Line {line_number}: {line_content}")
+
+    print("\nDifferences in record type counts:")
+    for record_type, counts in diff_record_types.items():
+        print(f"{record_type}: {file1}={counts[0]}, {file2}={counts[1]}")
