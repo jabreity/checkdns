@@ -1,6 +1,7 @@
 import argparse
 import gzip
-from dns import zone
+import io
+import dns.zone
 
 def extract_nameservers_from_dns_file(filename, gzipped):
     nameservers = []
@@ -9,11 +10,18 @@ def extract_nameservers_from_dns_file(filename, gzipped):
     open_func = gzip.open if gzipped else open
 
     with open_func(filename, 'rt') as f:
-        zone_reader = zone.ZoneReader(f)
+        # Use io.TextIOWrapper to handle gzip or regular text file
+        zone_file = io.TextIOWrapper(f)
 
-        for name, ttl, rdtype, rdata in zone_reader.iterate_rdatas():
-            if rdtype == 'NS':
-                nameservers.append(rdata.to_text())
+        try:
+            zone = dns.zone.from_file(zone_file, filename)
+            for name, node in zone.nodes.items():
+                for rdataset in node.rdatasets:
+                    if rdataset.rdtype == dns.rdatatype.NS:
+                        for rr in rdataset:
+                            nameservers.append(rr.to_text())
+        except dns.exception.SyntaxError:
+            print(f"Error parsing zone file: {filename}")
 
     return nameservers
 
