@@ -21,13 +21,13 @@ This Python script processes DNS Top-Level Domain (TLD) zone files (.txt and .tx
    - Clone the repository:
 
      ```
-     git clone https://github.com/your/repository.git
+     git clone https://github.com/jabreity/checkdns.git
      ```
 
    - Navigate to the directory:
 
      ```
-     cd dns-zone-processor
+     cd checkdns
      ```
 
 2. **Running the Script**
@@ -35,7 +35,7 @@ This Python script processes DNS Top-Level Domain (TLD) zone files (.txt and .tx
    The script accepts the following command-line arguments:
 
    ```
-   python dns_zone_processor.py <path_old> <path_new> [options]
+   python checkdns.py <path_old> <path_new> [options]
    ```
    
 - `<path_old>`: Path to old DNS TLD zone file or directory.
@@ -57,25 +57,25 @@ This Python script processes DNS Top-Level Domain (TLD) zone files (.txt and .tx
 - Compare old and new zone files and list added/removed domains:
 
   ```
-  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --compare
+  python checkdns.py path_old/zonefile.txt path_new/zonefile.txt --compare
   ```
 
 - List all record types present in the new zone files:
 
   ```
-  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --list-record-types
+  python checkdns.py path_old/zonefile.txt path_new/zonefile.txt --list-record-types
   ```
 
 - List all A records in the new zone files:
 
   ```
-  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --list-records-by-type A
+  python checkdns.py path_old/zonefile.txt path_new/zonefile.txt --list-records-by-type A
   ```
 
 - Output results in JSON format:
 
   ```
-  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --list-record-types --output-types json
+  python checkdns.py path_old/zonefile.txt path_new/zonefile.txt --list-record-types --output-types json
   ```
 
 4. **Output**
