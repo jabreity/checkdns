@@ -1,35 +1,31 @@
-import argparse
-import re
+def main():
+    parser = argparse.ArgumentParser(description='Process a zone file and extract unique field values')
+    parser.add_argument('filename', help='Path to the zone file')
+    parser.add_argument('-f', '--field', type=int, default=4, help='Field number to extract (default is 4)')
+    args = parser.parse_args()
 
-def extract_fourth_column_from_tld_zone(filename, column_number):
-  """Extracts the specified column from a TLD zone file.
+    filename = args.filename
+    field_num = args.field
 
-  Args:
-    filename: Path to the TLD zone file.
-    column_number: The index of the column to extract (1-based).
+    try:
+        field_values = set()
 
-  Returns:
-    A list of unique sorted values from the specified column.
-  """
+        with open(filename, 'r') as file:
+            for line in file:
+                # Skip comment lines and empty lines
+                if line.startswith(';') or line.strip() == '':
+                    continue
+                
+                fields = line.split()
+                if len(fields) >= field_num:
+                    field_values.add(fields[field_num - 1])
 
-  unique_values = set()
-  with open(filename, 'r') as zone_file:
-    for line in zone_file:
-      # Handle comments and empty lines
-      if line.startswith(';') or not line.strip():
-        continue
+        # Print the unique sorted values
+        for value in sorted(field_values):
+            print(value)
 
-      # Extract columns based on column_number
-      columns = line.split()
-      if len(columns) >= column_number:
-        unique_values.add(columns[column_number - 1])
-  return sorted(unique_values)
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description="Extract a column from a TLD zone file")
-  parser.add_argument("filename", help="Path to the TLD zone file")
-  parser.add_argument("-c", "--column", type=int, default=4, help="Column number to extract (default: 4)")
-  args = parser.parse_args()
-
-  unique_values = extract_fourth_column_from_tld_zone(args.filename, args.column)
-  print(unique_values)
+    main()
