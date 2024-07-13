@@ -65,7 +65,7 @@ def list_name_servers(file_path):
         fields = process_line(line)
         if len(fields) < 3:
             continue  # Skip invalid lines
-        current_name_server = fields[5].lower()
+        current_name_server = fields[4].lower()
         name_servers.add(current_name_server)
 
     print("\nName Servers encountered in the file:\n")
