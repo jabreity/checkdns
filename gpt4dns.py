@@ -112,7 +112,7 @@ def count_record_types(file_path):
         fields = process_line(line)
         if len(fields) < 3:
             continue  # Skip invalid lines
-        record_type = fields[2].lower()
+        record_type = fields[4].lower()
         record_counter[record_type] += 1
 
     print("\nCount of DNS Record Types:\n")
@@ -136,7 +136,7 @@ def list_record_types(file_path):
         fields = process_line(line)
         if len(fields) < 3:
             continue  # Skip invalid lines
-        record_type = fields[2].lower()
+        record_type = fields[4].lower()
         record_types.add(record_type)
 
     print("\nRecord Types in the File:\n")
