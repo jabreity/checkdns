@@ -1,4 +1,3 @@
-```markdown
 # checkdns.py
 
 ## Description
