@@ -1,6 +1,4 @@
 import argparse
-import gzip
-import os
 import re
 
 def parse_zone_file(file_path):
@@ -36,32 +34,40 @@ def extract_nameservers(file_path):
             # Extract nameserver from line
             yield line
 
-def compare_zone_files(file1, file2):
-    """Compares two zone files."""
-    # Implement comparison logic using generators for efficiency
-    pass
+def extract_record_types(file_path):
+    """Extracts record types from a zone file.
 
-# ... other functions for different operations
+    Args:
+        file_path: Path to the zone file.
+
+    Yields:
+        Unique record types.
+    """
+    record_types = set()
+    for line_number, line, is_comment in parse_zone_file(file_path):
+        if not is_comment:
+            record_type = line.split()[0]
+            record_types.add(record_type)
+    return record_types
+
+# ... other extraction functions for specific records, nameservers with specific record types, etc.
 
 def main():
     parser = argparse.ArgumentParser(description='DNS zone file processor')
-    parser.add_argument('inputs', nargs='+', help='Input files or directories')
-    parser.add_argument('--gzip', action='store_true', help='Constrain input to .txt.gz files in directories')
+    parser.add_argument('input_file', help='Input zone file')
     parser.add_argument('--list-nameservers', action='store_true', help='List all nameservers')
+    parser.add_argument('--list-record-types', action='store_true', help='List all record types')
     # Add other command-line options
 
     args = parser.parse_args()
 
-    # Main logic based on command-line options
     if args.list_nameservers:
-        for input_path in args.inputs:
-            if os.path.isdir(input_path):
-                # Handle directory with .txt or .txt.gz files
-            else:
-                for nameserver in extract_nameservers(input_path):
-                    print(nameserver)
-
-# ... other logic for different options
+        for nameserver in extract_nameservers(args.input_file):
+            print(nameserver)
+    elif args.list_record_types:
+        for record_type in extract_record_types(args.input_file):
+            print(record_type)
+    # ... other logic for different options
 
 if __name__ == '__main__':
     main()
