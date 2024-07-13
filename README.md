@@ -1,4 +1,3 @@
-```markdown
 # DNS Zone File Processor
 
 ## Description
