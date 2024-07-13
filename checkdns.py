@@ -1,30 +1,29 @@
-import argparse
 import re
 
-def parse_zone_file(file_path):
-    """Parses a zone file line by line, yielding record data.
+def extract_fourth_column_from_tld_zone(filename):
+  """Extracts the fourth column from a TLD zone file.
 
-    Args:
-        file_path: Path to the zone file.
+  Args:
+    filename: Path to the TLD zone file.
 
-    Yields:
-        A tuple containing the line number, line content, and a boolean indicating if the line is a comment.
-    """
-    with open(file_path, 'r') as f:
-        line_number = 0
-        for line in f:
-            line_number += 1
-            print(f"Processing line {line_number}")  # Add debugging print
-            line = line.strip()
-            if not line or line.startswith(';'):
-                yield line_number, line, True
-            else:
-                yield line_number, line, False
+  Returns:
+    A list of unique sorted values from the fourth column.
+  """
 
-# ... rest of the code
+  unique_values = set()
+  with open(filename, 'r') as zone_file:
+    for line in zone_file:
+      # Handle comments and empty lines
+      if line.startswith(';') or not line.strip():
+        continue
 
-if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        print(f"An error occurred: {e}")
+      # Assuming fourth column is the domain name, adjust regex if needed
+      match = re.match(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)", line)
+      if match:
+        unique_values.add(match.group(4))
+  return sorted(unique_values)
+
+if __name__ == "__main__":
+  filename = "/home/jason/projects/czds-api-client-python/domains/zonefiles/com.txt"
+  unique_domains = extract_fourth_column_from_tld_zone(filename)
+  print(unique_domains)
