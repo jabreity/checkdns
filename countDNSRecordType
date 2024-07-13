@@ -1,0 +1,40 @@
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser(description='Process a zone file and count occurrences of specified DNS record types')
+    parser.add_argument('filename', help='Path to the zone file')
+    args = parser.parse_args()
+
+    filename = args.filename
+
+    record_types = {
+        'a': 0,
+        'aaaa': 0,
+        'dnskey': 0,
+        'ds': 0,
+        'ns': 0,
+        'nsec3': 0,
+        'nsec3param': 0,
+        'rrsig': 0,
+        'soa': 0
+    }
+
+    try:
+        with open(filename, 'r') as file:
+            for line in file:
+                if line.startswith(';') or line.strip() == '':
+                    continue
+                
+                fields = line.split()
+                if len(fields) >= 4 and fields[3] in record_types:
+                    record_types[fields[3]] += 1
+
+        # Print the count of each record type
+        for record_type, count in record_types.items():
+            print(f"{record_type}: {count}")
+
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+
+if __name__ == "__main__":
+    main()
