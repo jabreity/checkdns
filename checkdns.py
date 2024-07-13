@@ -1,234 +1,177 @@
-import argparse
 import os
+import argparse
 import gzip
-import re
 import json
-from collections import defaultdict
-from typing import List, Dict, Union
-import socket
+import dns.zone
+from dns.rdatatype import to_text as rdatatype_to_text
 
-def read_zone_file(filename: str) -> str:
-    """Reads and returns content of a zone file, handles gzipped files."""
-    if filename.endswith('.gz'):
-        with gzip.open(filename, 'rt') as f:
-            content = f.read()
-    else:
-        with open(filename, 'r') as f:
-            content = f.read()
-    return content
 
-def parse_zone_file(content: str) -> List[Dict[str, Union[str, List[str]]]]:
-    """Parses DNS TLD zone file and returns a list of records."""
-    records = []
-    current_record = None
+def parse_args():
+    parser = argparse.ArgumentParser(description="DNS TLD Zone File Processor")
+    parser.add_argument("inputs", nargs="+", help="One or more files or directories to process")
+    parser.add_argument("--compare", action="store_true", help="Compare between zone files or directories")
+    parser.add_argument("--gzip", action="store_true", help="Constrain input to .txt.gz extensions when provided with a directory")
+    parser.add_argument("--list-ip", action="store_true", help="List all IP addresses within input")
+    parser.add_argument("--list-nameservers", action="store_true", help="List all nameservers within input")
+    parser.add_argument("--list-records-by-nameserver", metavar="NAMESERVER", help="List all records with a specific nameserver within input")
+    parser.add_argument("--list-record-types", action="store_true", help="List all record types within input")
+    parser.add_argument("--output-json", action="store_true", help="Output in JSON format")
+    parser.add_argument("--output-txt", action="store_true", help="Output in TXT format")
+    parser.add_argument("--output-by-type-by-ip", action="store_true", help="Output records by type by IP")
+    parser.add_argument("--list-nameservers-by-type", metavar="RECORD_TYPE", help="List all nameservers with a specific record type")
+    parser.add_argument("--list-record-types-by-nameserver", metavar="NAMESERVER", help="List all record types by nameserver")
+    parser.add_argument("--list-records-by-ttl", metavar="TTL", help="List all records by TTL")
+    parser.add_argument("--list-all-ttl-values", action="store_true", help="List all TTL values")
+    parser.add_argument("--list-dnssec-public-keys", action="store_true", help="List all DNSSEC public keys")
+    parser.add_argument("--validate-dnssec-public-keys", action="store_true", help="Validate all DNSSEC public keys")
+    return parser.parse_args()
 
-    for line in content.splitlines():
-        line = line.strip()
-        if not line or line.startswith(';'):
-            continue  # skip empty lines and comments
-        elif line.startswith('$ORIGIN'):
-            continue  # handle $ORIGIN if needed
-        elif line.startswith('$'):
-            continue  # skip other $ directives for now
-        elif re.match(r'^\S+\s+\d+\s+IN\s+[A-Z]+\s+', line):
-            if current_record:
-                records.append(current_record)
-            parts = re.split(r'\s+', line.strip(), maxsplit=4)
-            current_record = {
-                'name': parts[0],
-                'ttl': parts[1],
-                'class': parts[2],
-                'type': parts[3],
-                'data': [parts[4].strip()]
-            }
-        elif current_record and line.startswith(' '):
-            current_record['data'].append(line.strip())
+
+def is_valid_file(filename):
+    return os.path.isfile(filename) and (filename.endswith('.txt') or filename.endswith('.gz'))
+
+
+def is_valid_directory(dirname):
+    return os.path.isdir(dirname)
+
+
+def list_txt_files(directory, gzip_only=False):
+    files = []
+    for file in os.listdir(directory):
+        if gzip_only:
+            if file.endswith('.txt.gz'):
+                files.append(os.path.join(directory, file))
         else:
-            continue  # handle other record types as needed
+            if file.endswith('.txt'):
+                files.append(os.path.join(directory, file))
+    return files
 
-    if current_record:
-        records.append(current_record)
+
+def process_zone_file(filename):
+    records = []
+
+    try:
+        with open_zone_file(filename) as f:
+            zone = dns.zone.from_file(f, filename)
+            for name, node in zone.nodes.items():
+                for rdataset in node.rdatasets:
+                    for rdata in rdataset:
+                        records.append({
+                            'name': name.to_text(),
+                            'ttl': rdataset.ttl,
+                            'rdtype': rdatatype_to_text(rdataset.rdtype),
+                            'data': rdata.to_text()
+                        })
+
+    except Exception as e:
+        print(f"Error processing {filename}: {str(e)}")
 
     return records
 
-def list_record_types(records: List[Dict[str, str]]) -> List[str]:
-    """Lists all unique record types present in the zone file."""
-    return list(set(record['type'] for record in records))
 
-def list_records_by_type(records: List[Dict[str, str]], record_type: str) -> List[Dict[str, str]]:
-    """Lists all records of a specific type."""
-    return [record for record in records if record['type'] == record_type]
+def open_zone_file(filename):
+    if filename.endswith('.gz'):
+        return gzip.open(filename, 'rt')
+    else:
+        return open(filename, 'r')
 
-def list_ip_addresses(records: List[Dict[str, str]]) -> List[str]:
-    """Lists all IP addresses present in A or AAAA records."""
-    ip_addresses = set()
-    for record in records:
-        if record['type'] in ['A', 'AAAA']:
-            for data in record['data']:
-                try:
-                    ip = socket.gethostbyname(data)
-                    ip_addresses.add(ip)
-                except socket.gaierror:
-                    pass  # Handle DNS resolution errors if needed
-    return list(ip_addresses)
-
-def list_name_servers(records: List[Dict[str, str]]) -> List[str]:
-    """Lists all name servers present in NS records."""
-    name_servers = set()
-    for record in records:
-        if record['type'] == 'NS':
-            name_servers.update(record['data'])
-    return list(name_servers)
-
-def list_records_by_nameserver(records: List[Dict[str, str]], nameserver: str) -> List[Dict[str, str]]:
-    """Lists all records served by a specific name server."""
-    filtered_records = []
-    for record in records:
-        if 'NS' in record and nameserver in record['NS']:
-            filtered_records.append(record)
-    return filtered_records
-
-def list_records_by_type_by_ip(records: List[Dict[str, str]], record_type: str, ip_address: str) -> List[Dict[str, str]]:
-    """Lists all records of a specific type served by a specific IP address."""
-    filtered_records = []
-    for record in records:
-        if record['type'] == record_type:
-            for data in record['data']:
-                try:
-                    if ip_address == socket.gethostbyname(data):
-                        filtered_records.append(record)
-                except socket.gaierror:
-                    pass  # Handle DNS resolution errors if needed
-    return filtered_records
-
-def sanitize_filename(filename: str) -> str:
-    """Sanitizes the filename to prevent directory traversal."""
-    return re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
-
-def process_directory(directory: str) -> List[str]:
-    """Returns a list of file paths for .txt and .txt.gz files in the directory."""
-    file_paths = []
-    for filename in os.listdir(directory):
-        if filename.endswith('.txt') or filename.endswith('.txt.gz'):
-            file_paths.append(os.path.join(directory, filename))
-    return file_paths
-
-def output_to_stdio(records: List[Dict[str, str]], output_types: List[str]):
-    """Outputs results to standard output (stdio) based on selected output types."""
-    for output_type in output_types:
-        if output_type == 'json':
-            print(json.dumps(records, indent=2))
-        elif output_type == 'txt':
-            for record in records:
-                print(record)
-        else:
-            print("Unsupported output type. Please use 'json', 'txt', or 'stdio'.")
-
-def output_to_file(records: List[Dict[str, str]], output_types: List[str], filename: str):
-    """Outputs results to JSON or TXT file based on selected output types."""
-    for output_type in output_types:
-        if output_type == 'json':
-            with open(filename + '.json', 'w') as f:
-                json.dump(records, f, indent=2)
-        elif output_type == 'txt':
-            with open(filename + '.txt', 'w') as f:
-                for record in records:
-                    f.write(str(record) + '\n')
-        else:
-            print("Unsupported output type. Please use 'json' or 'txt'.")
-
-def compare_zone_files(records_old: List[Dict[str, str]], records_new: List[Dict[str, str]]) -> Dict[str, List[str]]:
-    """Compares two sets of DNS TLD zone files and returns added and removed domains."""
-    old_domains = set(record['name'] for record in records_old)
-    new_domains = set(record['name'] for record in records_new)
-
-    added_domains = list(new_domains - old_domains)
-    removed_domains = list(old_domains - new_domains)
-
-    return {'added_domains': added_domains, 'removed_domains': removed_domains}
 
 def main():
-    parser = argparse.ArgumentParser(description='Process DNS TLD zone files and provide various outputs.')
-    parser.add_argument('path_old', type=str, help='Path to old DNS TLD zone file or directory')
-    parser.add_argument('path_new', type=str, help='Path to new DNS TLD zone file or directory')
-    parser.add_argument('--compare', action='store_true', help='Compare old and new zone files and list added/removed domains')
-    parser.add_argument('--list-record-types', action='store_true', help='List all record types present')
-    parser.add_argument('--list-records-by-type', metavar='RECORD_TYPE', type=str, help='List all records of a specific type')
-    parser.add_argument('--list-ip-addresses', action='store_true', help='List all IP addresses present in A or AAAA records')
-    parser.add_argument('--list-name-servers', action='store_true', help='List all name servers present in NS records')
-    parser.add_argument('--list-records-by-nameserver', metavar='NAMESERVER', type=str, help='List all records served by a specific name server')
-    parser.add_argument('--list-records-by-type-by-ip', metavar=('RECORD_TYPE', 'IP_ADDRESS'), nargs=2, help='List all records of a specific type served by a specific IP address')
-    parser.add_argument('--output-types', metavar='OUTPUT_TYPES', nargs='+', choices=['stdio', 'json', 'txt'], default=['stdio'], help='Output types (default: stdio)')
-    args = parser.parse_args()
+    args = parse_args()
 
-    path_old = sanitize_filename(args.path_old)
-    path_new = sanitize_filename(args.path_new)
+    # Collect input files from directories if provided
+    input_files = []
+    for item in args.inputs:
+        if is_valid_file(item):
+            input_files.append(item)
+        elif is_valid_directory(item):
+            input_files.extend(list_txt_files(item, args.gzip))
 
-    if os.path.isdir(path_old):
-        file_paths_old = process_directory(path_old)
-    elif os.path.isfile(path_old):
-        file_paths_old = [path_old]
-    else:
-        print("Error: Path for old files must be a directory or file.")
-        return
+    # Process each input file
+    results = []
+    for file in input_files:
+        results.extend(process_zone_file(file))
 
-    if os.path.isdir(path_new):
-        file_paths_new = process_directory(path_new)
-    elif os.path.isfile(path_new):
-        file_paths_new = [path_new]
-    else:
-        print("Error: Path for new files must be a directory or file.")
-        return
+    # Perform requested operations
+    output = None
 
-    records_old = []
-    for file_path in file_paths_old:
-        try:
-            content = read_zone_file(file_path)
-            records_old.extend(parse_zone_file(content))
-        except (FileNotFoundError, IOError) as e:
-            print(f"Error: File '{file_path}' not found or could not be read.")
-            continue
+    if args.list_ip:
+        ips = set()
+        for record in results:
+            if record['rdtype'] == 'A' or record['rdtype'] == 'AAAA':
+                ips.add(record['data'])
+        output = ips
 
-    records_new = []
-    for file_path in file_paths_new:
-        try:
-            content = read_zone_file(file_path)
-            records_new.extend(parse_zone_file(content))
-        except (FileNotFoundError, IOError) as e:
-            print(f"Error: File '{file_path}' not found or could not be read.")
-            continue
+    elif args.list_nameservers:
+        nameservers = set()
+        for record in results:
+            if record['rdtype'] == 'NS':
+                nameservers.add(record['data'])
+        output = nameservers
 
-    if args.compare:
-        comparison_result = compare_zone_files(records_old, records_new)
-        output_to_stdio(comparison_result, args.output_types)
+    elif args.list_records_by_nameserver:
+        nameserver = args.list_records_by_nameserver
+        records = [record for record in results if record['rdtype'] == 'NS' and record['data'] == nameserver]
+        output = records
 
-    if args.list_record_types:
-        output_to_stdio(list_record_types(records_new), args.output_types)
+    # Add more options as needed...
 
-    if args.list_records_by_type:
-        records_of_type = list_records_by_type(records_new, args.list_records_by_type)
-        output_to_stdio(records_of_type, args.output_types)
+    # Output results
+    if output is not None:
+        if args.output_json:
+            print(json.dumps(list(output), indent=4))
+        elif args.output_txt:
+            for item in output:
+                print(item)
+        else:
+            print(output)
 
-    if args.list_ip_addresses:
-        ip_addresses = list_ip_addresses(records_new)
-        output_to_stdio(ip_addresses, args.output_types)
 
-    if args.list_name_servers:
-        name_servers = list_name_servers(records_new)
-        output_to_stdio(name_servers, args.output_types)
+def test_script():
+    # Create a temporary test directory with test files
+    import tempfile
+    import shutil
 
-    if args.list_records_by_nameserver:
-        records_by_ns = list_records_by_nameserver(records_new, args.list_records_by_nameserver)
-        output_to_stdio(records_by_ns, args.output_types)
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # Create test files
+        with open(os.path.join(temp_dir, 'test1.txt'), 'w') as f:
+            f.write("""$ORIGIN example.com.
+@   3600 IN SOA sns.dns.icann.org. noc.dns.icann.org. (
+                2023070801 ; serial
+                7200       ; refresh (2 hours)
+                3600       ; retry (1 hour)
+                1209600    ; expire (2 weeks)
+                3600       ; minimum (1 hour)
+                )
 
-    if args.list_records_by_type_by_ip:
-        record_type, ip_address = args.list_records_by_type_by_ip
-        records_by_type_by_ip = list_records_by_type_by_ip(records_new, record_type, ip_address)
-        output_to_stdio(records_by_type_by_ip, args.output_types)
+@   3600 IN NS a.iana-servers.net.
+@   3600 IN NS b.iana-servers.net.
+www 3600 IN A 192.0.2.1
+""")
+        
+        with gzip.open(os.path.join(temp_dir, 'test2.txt.gz'), 'wt') as f:
+            f.write("""$ORIGIN example.net.
+@   3600 IN SOA sns.dns.icann.org. noc.dns.icann.org. (
+                2023070802 ; serial
+                7200       ; refresh (2 hours)
+                3600       ; retry (1 hour)
+                1209600    ; expire (2 weeks)
+                3600       ; minimum (1 hour)
+                )
 
-    if 'stdio' not in args.output_types:
-        output_filename = os.path.splitext(file_paths_new[0])[0] + '_processed'
-        output_to_file(records_new, args.output_types, output_filename)
+@   3600 IN NS a.example.net.
+@   3600 IN NS b.example.net.
+www 3600 IN A 192.0.2.2
+""")
+        
+        # Run the script with test arguments
+        test_args = ["--list-ip", "--output-json", temp_dir]
+        args = parse_args()
+        args.inputs = test_args[2:]
+        main()
 
-if __name__ == '__main__':
-    main()
+    finally:
+        shutil.rmtree(temp_dir)
+
+if
