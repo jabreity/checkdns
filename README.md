@@ -10,7 +10,7 @@ This Python script processes DNS Top-Level Domain (TLD) zone files (.txt and .tx
 - **List Name Servers**: Outputs all name servers present in NS records.
 - **List Records by Name Server**: Lists all records served by a specific name server.
 - **List Records by Type by IP**: Displays all records of a specific type served by a specific IP address.
-- **Compare Zone Files**: Compares two sets of DNS TLD zone files or directories and lists domains that have been added or removed between them.
+- **Compare Zone Files**: Optionally compares two sets of zone files and lists added/removed domains.
 - **Multiple Output Formats**: Supports output to standard output (stdio), JSON files, or plain text files (.txt) based on user preference.
 - **Input Sanitization**: Ensures safe file and directory input handling to prevent directory traversal.
 
@@ -34,47 +34,48 @@ This Python script processes DNS Top-Level Domain (TLD) zone files (.txt and .tx
 
    The script accepts the following command-line arguments:
 
-python dns_zone_processor.py <path_old> <path_new> [options]
-
-
-- `<path_old>`: Path to the old DNS TLD zone file or directory.
-- `<path_new>`: Path to the new DNS TLD zone file or directory.
+   ```
+   python dns_zone_processor.py <path_old> <path_new> [options]
+   ```
+   
+- `<path_old>`: Path to old DNS TLD zone file or directory.
+- `<path_new>`: Path to new DNS TLD zone file or directory.
 
 - **Options**:
 
-  - `--list-record-types`: Lists all record types present in the zone file(s).
-  - `--list-records-by-type <RECORD_TYPE>`: Lists all records of a specific type.
-  - `--list-ip-addresses`: Lists all IP addresses present in A or AAAA records.
-  - `--list-name-servers`: Lists all name servers present in NS records.
-  - `--list-records-by-nameserver <NAMESERVER>`: Lists all records served by a specific name server.
-  - `--list-records-by-type-by-ip <RECORD_TYPE> <IP_ADDRESS>`: Lists all records of a specific type served by a specific IP address.
-  - `--compare`: Compare two sets of DNS TLD zone files or directories and list domains that have been added or removed.
+  - `--compare`: Compares old and new zone files and lists added/removed domains.
+  - `--list-record-types`: Lists all record types present in the new zone file(s).
+  - `--list-records-by-type <RECORD_TYPE>`: Lists all records of a specific type in the new zone file(s).
+  - `--list-ip-addresses`: Lists all IP addresses present in A or AAAA records in the new zone file(s).
+  - `--list-name-servers`: Lists all name servers present in NS records in the new zone file(s).
+  - `--list-records-by-nameserver <NAMESERVER>`: Lists all records served by a specific name server in the new zone file(s).
+  - `--list-records-by-type-by-ip <RECORD_TYPE> <IP_ADDRESS>`: Lists all records of a specific type served by a specific IP address in the new zone file(s).
   - `--output-types <OUTPUT_TYPES>`: Specifies output types (`stdio`, `json`, `txt`). Multiple types can be specified.
 
 3. **Examples**
 
-- Compare two sets of DNS TLD zone files:
+- Compare old and new zone files and list added/removed domains:
 
   ```
-  python dns_zone_processor.py path/old_directory path/new_directory --compare
+  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --compare
   ```
 
 - List all record types present in the new zone files:
 
   ```
-  python dns_zone_processor.py path/old_zonefile.txt path/new_zonefile.txt --list-record-types
+  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --list-record-types
   ```
 
 - List all A records in the new zone files:
 
   ```
-  python dns_zone_processor.py path/old_zonefile.txt path/new_zonefile.txt --list-records-by-type A
+  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --list-records-by-type A
   ```
 
 - Output results in JSON format:
 
   ```
-  python dns_zone_processor.py path/old_zonefile.txt path/new_zonefile.txt --list-record-types --output-types json
+  python dns_zone_processor.py path_old/zonefile.txt path_new/zonefile.txt --list-record-types --output-types json
   ```
 
 4. **Output**
@@ -86,7 +87,6 @@ python dns_zone_processor.py <path_old> <path_new> [options]
 
 - Ensure Python 3.x is installed on your system.
 - The script does not load entire files into memory at once, ensuring efficient processing of large zone files.
-- Use `--compare` to perform a comparison between two sets of DNS TLD zone files or directories.
 
 #### License
 
@@ -94,7 +94,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 #### Authors
 
-- Jason 'jabreity' Breitwieser
+-Jason (jabreity) Breitwieser
 
 #### Acknowledgments
 
