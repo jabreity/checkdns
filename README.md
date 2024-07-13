@@ -1,53 +1,52 @@
-# checkdns.py
+```markdown
+# DNS Zone File Processor
 
 ## Description
-`checkdns.py` is a Python script designed to process DNS TLD zone files and provide various forms of output based on command-line options. It supports operations such as listing IP addresses, nameservers, specific record types, and more, with options to output results in JSON, TXT formats, or to standard output.
+This Python script `checkdns.py` processes DNS zone files to extract various information such as nameservers, IP addresses, and different types of DNS records. It supports both plain text (.txt) and gzip compressed (.txt.gz) files.
 
 ## Features
-- Process DNS TLD zone files (.txt and .txt.gz formats).
-- Supports input from files or directories.
-- Memory-efficient processing for handling large zone files.
-- Various operations supported including listing IPs, nameservers, record types, etc.
-- Flexible output options (JSON, TXT).
-
+- **List Nameservers**: Extracts all nameservers from the input zone files.
+- **List IP Addresses**: Extracts all IP addresses from the input zone files.
+- **Filter Records by Nameserver**: Extracts records associated with a specific nameserver.
+- **List Record Types**: Extracts all types of DNS records present in the input files.
+- **Output Formats**: Supports output in JSON and plaintext formats.
+  
 ## Usage
+To use the script, execute it with Python, providing necessary arguments:
+
 ```bash
-python checkdns.py [options] inputs...
+python checkdns.py <inputs> [--gzip] [--list-nameservers] [--list-ips] [--nameserver <nameserver>] [--list-record-types] [--output-format <format>] [--output-file <file>]
 ```
 
-## Options
-- `--list-ip`: List all IP addresses within the input.
-- `--list-nameservers`: List all nameservers within the input.
-- `--list-records-by-nameserver NAMESERVER`: List all records with a specific nameserver within input.
-- `--list-record-types`: List all record types within input.
-- `--output-json`: Output results in JSON format.
-- `--output-txt`: Output results in TXT format.
-- `--output-by-type-by-ip`: Output records by type by IP.
-- `--list-nameservers-by-type RECORD_TYPE`: List all nameservers with a specific record type.
-- `--list-record-types-by-nameserver NAMESERVER`: List all record types by nameserver.
-- `--list-records-by-ttl TTL`: List all records by TTL.
-- `--list-all-ttl-values`: List all TTL values.
-- `--list-dnssec-public-keys`: List all DNSSEC public keys.
-- `--validate-dnssec-public-keys`: Validate all DNSSEC public keys.
+### Arguments:
+- `<inputs>`: One or more input zone files or directories containing zone files.
+- `--gzip`: Optional flag to constrain input to .txt.gz files.
+- `--list-nameservers`: Optional flag to list all nameservers found.
+- `--list-ips`: Optional flag to list all IP addresses found.
+- `--nameserver <nameserver>`: Optional flag to filter records by a specific nameserver.
+- `--list-record-types`: Optional flag to list all DNS record types found.
+- `--output-format <format>`: Optional flag to specify output format (`json` or `txt`). Default is `json`.
+- `--output-file <file>`: Optional flag to specify the output file path.
 
 ## Examples
+### Example 1: List all nameservers in a directory of zone files
 ```bash
-# List all IP addresses in the provided directory
-python checkdns.py --list-ip /path/to/directory
-
-# List all nameservers and output in JSON format
-python checkdns.py --list-nameservers --output-json /path/to/file.txt /path/to/another_directory
-
-# Compare two directories of zone files
-python checkdns.py --compare /path/to/directory1 /path/to/directory2
+python checkdns.py /path/to/zone/files --list-nameservers
 ```
 
-## Contributors
+### Example 2: Filter records by a specific nameserver and save output to JSON file
+```bash
+python checkdns.py /path/to/zone/file.txt --nameserver ns1.example.com --output-format json --output-file output.json
+```
+
+## Requirements
+- Python 3.x
+- `argparse` module (typically included in Python standard library)
+
+## Author
 - Jason "jabreity" Breitwieser
-- ChatGPT (OpenAI)
+- OpenAI ChatGPT (assistant for writing this README)
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
 ```
 
-This `README.md` file provides a concise overview of the `checkdns.py` script, including its description, features, usage examples, options available, contributors, and licensing information. Adjustments can be made based on specific details or additional functionalities of the script.
+Feel free to customize the examples or add more details as per your specific use cases or preferences. Adjust the paths and examples to reflect how users are expected to interact with your script in their environment.
