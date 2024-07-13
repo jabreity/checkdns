@@ -18,9 +18,12 @@ def extract_nameservers_from_dns_file(filename, gzipped):
             zone = dns.zone.from_file(zone_file, filename)
             for name, node in zone.nodes.items():
                 for rdataset in node.rdatasets:
-                    if rdataset.rdtype == dns.rdatatype.NS:
-                        for rr in rdataset:
-                            nameservers.append(rr.to_text())
+                    try:
+                        if rdataset.rdtype == dns.rdatatype.NS:
+                            for rr in rdataset:
+                                nameservers.append(rr.to_text())
+                    except dns.exception.DNSException as e:
+                        print(f"Error processing record in '{filename}': {e}")
         except dns.exception.SyntaxError as e:
             print(f"Error parsing zone file '{filename}': {e}")
 
