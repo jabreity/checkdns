@@ -13,3 +13,5 @@ ChatGPT wrote the following bash script in python about 30 different ways before
 It is important to note, each pass bears no overall similarity betwen passes.
 
 This is how you can tell my code for my employers was written by hand.
+
+It is interesting to note, it got worse with GPT-4, much of the functionality doesn't work.
