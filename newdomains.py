@@ -2,16 +2,17 @@ import argparse
 import os
 import gzip
 
-def process_directories(dir1, dir2, field_num):
-    files1 = find_gz_files(dir1)
-    files2 = find_gz_files(dir2)
+# Define find_gz_files function here
+def find_gz_files(directory):
+    gz_files = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.gz'):
+                gz_files.append(os.path.join(root, file))
+    return gz_files
 
-    for filename1 in files1:
-        basename1 = os.path.basename(filename1)
-        matching_file2 = os.path.join(dir2, basename1)
-        if matching_file2 in files2:
-            print(f"\nComparing files: {filename1} and {matching_file2}\n")
-            compare_files(filename1, matching_file2, field_num)
+# Define extract_unique_fields, count_record_types, compare_files, and process_directories functions here
+# ...
 
 def main():
     parser = argparse.ArgumentParser(description='Compare gzipped zone files or directories')
