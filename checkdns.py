@@ -1,8 +1,15 @@
 import argparse
 import gzip
 import io
-import dns.zone
-import dns.exception
+import dns.rdata
+import dns.rdatatype
+
+def parse_dns_line(line):
+    # Example parsing logic, adjust as per your DNS record format
+    parts = line.strip().split()
+    if len(parts) >= 5 and parts[2] == 'IN' and parts[3] in ['NS', 'A', 'AAAA', 'CNAME']:
+        return parts[4]
+    return None
 
 def extract_nameservers_from_dns_file(filename, gzipped):
     nameservers = []
@@ -11,21 +18,11 @@ def extract_nameservers_from_dns_file(filename, gzipped):
     open_func = gzip.open if gzipped else open
 
     with open_func(filename, 'rt') as f:
-        # Use io.TextIOWrapper to handle gzip or regular text file
-        zone_file = io.TextIOWrapper(f)
-
-        try:
-            zone = dns.zone.from_file(zone_file, filename)
-            for name, node in zone.nodes.items():
-                for rdataset in node.rdatasets:
-                    try:
-                        if rdataset.rdtype == dns.rdatatype.NS:
-                            for rr in rdataset:
-                                nameservers.append(rr.to_text())
-                    except dns.exception.DNSException as e:
-                        print(f"Error processing record in '{filename}': {e}")
-        except dns.exception.SyntaxError as e:
-            print(f"Error parsing zone file '{filename}': {e}")
+        for line in f:
+            # Example: Parse each line to extract nameservers
+            nameserver = parse_dns_line(line)
+            if nameserver:
+                nameservers.append(nameserver)
 
     return nameservers
 
