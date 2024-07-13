@@ -2,10 +2,21 @@ import os
 import argparse
 import gzip
 
+def is_gzip_file(filepath):
+    """ Check if a file is a valid gzip file by attempting to read the gzip magic number. """
+    try:
+        with open(filepath, 'rb') as f:
+            return f.read(2) == b'\x1f\x8b'  # Check for gzip magic number
+    except IOError:
+        return False
+
 def find_unique_lines(dir1, dir2):
     # Get list of files in dir1 and dir2
     files_in_dir1 = os.listdir(dir1)
     files_in_dir2 = os.listdir(dir2)
+
+    # Filter out non-gzip files from dir1
+    files_in_dir1 = [f for f in files_in_dir1 if is_gzip_file(os.path.join(dir1, f))]
 
     # Read lines from files in dir1 and store in a dictionary of sets
     lines_in_dir1 = {}
@@ -17,6 +28,10 @@ def find_unique_lines(dir1, dir2):
 
     # Iterate through files in dir2
     for file2 in files_in_dir2:
+        if not is_gzip_file(os.path.join(dir2, file2)):
+            print(f"Skipping non-gzip file: {file2}")
+            continue
+        
         unique_lines = set()
         with gzip.open(os.path.join(dir2, file2), 'rt') as f2:
             for line in f2:
