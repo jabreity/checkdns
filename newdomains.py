@@ -1,3 +1,7 @@
+import argparse
+import os
+import gzip
+
 def process_directories(dir1, dir2, field_num):
     files1 = find_gz_files(dir1)
     files2 = find_gz_files(dir2)
