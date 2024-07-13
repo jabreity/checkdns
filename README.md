@@ -44,7 +44,7 @@ python checkdns.py /path/to/zone/file.txt --nameserver ns1.example.com --output-
 
 ## Author
 - Jason "jabreity" Breitwieser
-- OpenAI ChatGPT (assistant for writing this README)
+- OpenAI ChatGPT
 
 ```
 
